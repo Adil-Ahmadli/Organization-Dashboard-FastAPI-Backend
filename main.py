@@ -13,7 +13,8 @@ async def register(member: _schemas.MemberCreate, db: _orm.Session = _fastapi.De
     if db_member:
         raise _fastapi.HTTPException(status_code=400, detail="Email already registered")
     
-    return await _services.register_member(member, db)
+    await _services.register_member(member, db)
+    return await _services.create_token(member)
 
 @app.post("/api/token")
 async def generate_token(form_data: _security.OAuth2PasswordRequestForm = _fastapi.Depends(),
