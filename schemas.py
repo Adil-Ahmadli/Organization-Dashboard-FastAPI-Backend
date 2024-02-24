@@ -21,8 +21,8 @@ class Member(MemberBase):
     date_created: str
     date_last_updated: str
     active: bool
-    suspended_by_id: int
-    last_updated_by_id: int
+    suspended_by_id: int | None
+    last_updated_by_id: int | None
 
     class Config:
         from_attributes=True

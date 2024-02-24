@@ -21,8 +21,9 @@ class Member(Base):
     suspended_by_id = Column(Integer, ForeignKey('members.id', ondelete='SET NULL'), default=None, nullable=True)
     last_updated_by_id = Column(Integer, ForeignKey('members.id', ondelete='SET NULL'), default=None, nullable=True)
 
-    parent = relationship("Member", remote_side=[id], backref="children", foreign_keys=[suspended_by_id, last_updated_by_id])
-    children = relationship("Item", back_populates="parent", cascade="all, delete")
+    suspended_by = relationship("Member", foreign_keys=[suspended_by_id])
+    last_updated_by = relationship("Member", foreign_keys=[last_updated_by_id])
+    children = relationship("Item", cascade="all, delete")
 
     def verify_password(self, password: str):
         return hash.bcrypt.verify(password, self.hashed_password)
@@ -40,4 +41,4 @@ class Item(Base):
     date_created = Column(String, default=_dt.datetime.now().isoformat(), nullable=False)
     date_last_updated = Column(String, default=_dt.datetime.now().isoformat(), nullable=False)
     owner_id = Column(Integer, ForeignKey('members.id', ondelete='CASCADE'), nullable=False)
-    members = relationship("Member", backref="other_entries")
+    members = relationship("Member", foreign_keys=[owner_id])
