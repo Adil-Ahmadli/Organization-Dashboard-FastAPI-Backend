@@ -35,10 +35,38 @@ async def generate_token(form_data: _security.OAuth2PasswordRequestForm = _fasta
 async def get_me(current_member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
     return current_member
 
+@app.get("/api/members", response_model=list[_schemas.Member])
+async def read_members(skip: int = 0, limit: int = 10,
+                       current_member: _schemas.Member = _fastapi.Depends(_services.get_current_member),
+                       db: _orm.Session = _fastapi.Depends(_services.get_db)):
+    return await _services.get_members(skip, limit, current_member, db)
+ 
+@app.post("/api/members")
+async def create_member(member: _schemas.MemberCreate, 
+                        db: _orm.Session = _fastapi.Depends(_services.get_db),
+                        current_member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
+    return await _services.create_member(current_member, member, db)
+
+@app.get("/api/members/{member_id}", status_code=200)
+async def read_member(member_id: int,
+                    db: _orm.Session = _fastapi.Depends(_services.get_db),
+                    current_member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
+            return await _services.get_member(member_id, current_member, db)
+
+@app.delete("/api/members/{member_id}", status_code=204)
+async def delete_member(member_id: int,
+                        db: _orm.Session = _fastapi.Depends(_services.get_db),
+                        current_member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
+        await _services.delete_member(member_id, current_member, db)
+        return {'detail': 'Member deleted successfully'}
+
+
+
+
+
 
 
 # item routes
-# it returns a basic user's items
 @app.get("/api/items", response_model=list[_schemas.Item])
 async def read_items(skip: int = 0, limit: int = 10,
                      member: _schemas.Member = _fastapi.Depends(_services.get_current_member),
@@ -77,3 +105,4 @@ async def update_item(item_id: int,
                     ):
         await _services.update_item(item_id, item, current_member, db)
         return {'detail': 'Item updated successfully'}
+
