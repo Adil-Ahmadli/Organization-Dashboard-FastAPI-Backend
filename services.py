@@ -56,3 +56,46 @@ async def get_current_member(db: _orm.Session = _fastapi.Depends(get_db),
         raise _fastapi.HTTPException(status_code=401, detail="Invalid email or password")
     
     return _schemas.Member.from_orm(member)
+
+async def create_item(member: _schemas.Member , 
+                      item: _schemas.ItemCreate, 
+                      db: _orm.Session ):
+    db_item = _models.Item(**item.dict(), owner_id=member.id)
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return _schemas.Item.from_orm(db_item)
+
+# it returns a basic user's items
+async def get_items(skip: int, limit: int, member: _schemas.Member, db: _orm.Session):
+    items = db.query(_models.Item).filter(_models.Item.owner_id == member.id).offset(skip).limit(limit).all()
+    
+    return list(map(_schemas.Item.from_orm, items))
+
+async def _item_selector(item_id: int, member: _schemas.Member, db: _orm.Session):
+    item =  ( 
+        db.query(_models.Item)
+             .filter_by(owner_id=member.id)
+             .filter(_models.Item.id == item_id).first()
+    )
+    if not item:
+        raise _fastapi.HTTPException(status_code=404, detail="Item not found")
+    
+    return item
+
+async def get_item(item_id: int, member: _schemas.Member, db: _orm.Session):
+    return _schemas.Item.from_orm(await _item_selector(item_id, member, db))
+
+async def delete_item(item_id: int, member: _schemas.Member, db: _orm.Session):
+    item = await _item_selector(item_id, member, db)
+    db.delete(item)
+    db.commit()
+
+
+async def update_item(item_id: int, item: _schemas.ItemCreate, member: _schemas.Member, db: _orm.Session):
+    db_item = await _item_selector(item_id, member, db)
+    for key, value in item.dict().items():
+        setattr(db_item, key, value)
+    db.commit()
+    db.refresh(db_item)
+    return _schemas.Item.from_orm(db_item)
