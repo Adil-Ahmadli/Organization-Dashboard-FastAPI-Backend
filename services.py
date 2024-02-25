@@ -60,6 +60,8 @@ async def get_current_member(db: _orm.Session = _fastapi.Depends(get_db),
 async def create_item(member: _schemas.Member , 
                       item: _schemas.ItemCreate, 
                       db: _orm.Session ):
+    if member.employee_role == "admin":
+        raise _fastapi.HTTPException(status_code=400, detail="Admins cannot create items")
     db_item = _models.Item(**item.dict(), owner_id=member.id)
     db.add(db_item)
     db.commit()
@@ -99,6 +101,8 @@ async def delete_item(item_id: int, member: _schemas.Member, db: _orm.Session):
 
 
 async def update_item(item_id: int, item: _schemas.ItemCreate, member: _schemas.Member, db: _orm.Session):
+    if member.employee_role == "user":
+        raise _fastapi.HTTPException(status_code=400, detail="Users cannot update items")
     db_item = await _item_selector(item_id, member, db)
     for key, value in item.dict().items():
         setattr(db_item, key, value)
