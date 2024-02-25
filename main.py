@@ -13,8 +13,8 @@ async def register(member: _schemas.MemberCreate, db: _orm.Session = _fastapi.De
     if db_member:
         raise _fastapi.HTTPException(status_code=400, detail="Email already registered")
 
-    db_member = await _services.get_user_by_role(member.employee_role, db)
-    if db_member:
+    db_member = await _services.get_user_by_role("superadmin", db)
+    if db_member and member.employee_role == "superadmin":
         raise _fastapi.HTTPException(status_code=400, detail="There can be at most one superadmin in the organization!")
 
     member = await _services.register_member(member, db)

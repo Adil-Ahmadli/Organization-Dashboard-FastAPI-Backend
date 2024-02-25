@@ -66,18 +66,24 @@ async def create_item(member: _schemas.Member ,
     db.refresh(db_item)
     return _schemas.Item.from_orm(db_item)
 
-# it returns a basic user's items
+# it returns all items for the superadmin and admin, and only the user's items for the basic user
 async def get_items(skip: int, limit: int, member: _schemas.Member, db: _orm.Session):
-    items = db.query(_models.Item).filter(_models.Item.owner_id == member.id).offset(skip).limit(limit).all()
+    if member.employee_role == "superadmin" or member.employee_role == "admin":
+        items = db.query(_models.Item).offset(skip).limit(limit).all()
+    else:
+        items = db.query(_models.Item).filter(_models.Item.owner_id == member.id).offset(skip).limit(limit).all()
     
     return list(map(_schemas.Item.from_orm, items))
 
 async def _item_selector(item_id: int, member: _schemas.Member, db: _orm.Session):
-    item =  ( 
-        db.query(_models.Item)
-             .filter_by(owner_id=member.id)
-             .filter(_models.Item.id == item_id).first()
-    )
+    if member.employee_role == "superadmin" or member.employee_role == "admin":
+        item =  db.query(_models.Item).filter(_models.Item.id == item_id).first()
+    else:
+        item =  ( 
+            db.query(_models.Item)
+                .filter_by(owner_id=member.id)
+                .filter(_models.Item.id == item_id).first()
+        )
     if not item:
         raise _fastapi.HTTPException(status_code=404, detail="Item not found")
     

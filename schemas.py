@@ -12,7 +12,7 @@ class MemberBase(_pydantic.BaseModel):
         from_attributes=True
 
 class MemberCreate(MemberBase):
-    hashed_password: str
+    password: str
 
     class Config:
         from_attributes=True
