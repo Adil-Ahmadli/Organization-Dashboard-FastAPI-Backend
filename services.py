@@ -21,6 +21,9 @@ def get_db():
 async def get_user_by_email(email: str, db: _orm.Session):
     return db.query(_models.Member).filter(_models.Member.email == email).first()
 
+async def get_user_by_role(role: str, db: _orm.Session):
+    return db.query(_models.Member).filter(_models.Member.employee_role == role).first()
+
 async def register_member(member: _schemas.MemberCreate, db: _orm.Session):
     db_member = _models.Member(email=member.email, name=member.name, 
                                surname=member.surname, employee_role=member.employee_role, 
