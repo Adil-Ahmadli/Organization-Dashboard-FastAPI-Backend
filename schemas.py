@@ -8,7 +8,8 @@ class MemberBase(_pydantic.BaseModel):
     name: str
     surname: str
     employee_role: str
-
+    class Config:
+        from_attributes=True
 
 class MemberCreate(MemberBase):
     hashed_password: str

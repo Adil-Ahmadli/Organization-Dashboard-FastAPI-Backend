@@ -29,6 +29,10 @@ async def generate_token(form_data: _security.OAuth2PasswordRequestForm = _fasta
     
     return await _services.create_token(user)
 
+@app.get("/api/members/me", response_model=_schemas.Member)
+async def get_me(current_member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
+    return current_member
+
 @app.get("/items")
 async def read_items(skip: int = 0, limit: int = 10, db: _orm.Session = _fastapi.Depends(_services.get_db)):
     items = db.query(_models.Item).offset(skip).limit(limit).all()
@@ -37,4 +41,7 @@ async def read_items(skip: int = 0, limit: int = 10, db: _orm.Session = _fastapi
 @app.get("/members")
 async def read_members(skip: int = 0, limit: int = 10, db: _orm.Session = _fastapi.Depends(_services.get_db)):
     members = db.query(_models.Member).offset(skip).limit(limit).all()
-    return members
+    newmembers = []
+    for member in members:
+        newmembers.append(_schemas.Member.from_orm(member))
+    return newmembers
