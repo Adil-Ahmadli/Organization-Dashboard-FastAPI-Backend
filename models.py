@@ -24,12 +24,14 @@ class Member(Base):
     suspended_by = relationship("Member", foreign_keys=[suspended_by_id])
     last_updated_by = relationship("Member", foreign_keys=[last_updated_by_id])
     children = relationship("Item", cascade="all, delete")
+    logs = relationship("Logs", cascade="all, delete")
+
 
     def verify_password(self, password: str):
         return hash.bcrypt.verify(password, self.hashed_password)
     
     def __repr__(self):
-        return f"<Member {self.name} {self.surname} {self.email} {self.employee_role}>"
+        return f"<Member: {self.name} {self.surname} {self.email} {self.employee_role}>"
 
 class Item(Base):
     __tablename__ = "items"
@@ -42,3 +44,20 @@ class Item(Base):
     date_last_updated = Column(String, default=_dt.datetime.now().isoformat(), nullable=False)
     owner_id = Column(Integer, ForeignKey('members.id', ondelete='CASCADE'), nullable=False)
     members = relationship("Member", foreign_keys=[owner_id])
+
+    def __repr__(self):
+        return f"<Item: {self.name}, {self.price} >"
+
+class Logs(Base):
+    __tablename__ = "logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    subject_id = Column(Integer, ForeignKey('members.id', ondelete='CASCADE'), nullable=False)
+    subject_email = Column(String, nullable=False)
+    object_id = Column(Integer, nullable=False)
+    log = Column(String, nullable=False)
+    date_created = Column(String, default=_dt.datetime.now().isoformat(), nullable=False)
+    members = relationship("Member", foreign_keys=[subject_id])
+
+    def __repr__(self):
+        return f"<Log: {self.log} >"

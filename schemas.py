@@ -54,3 +54,11 @@ class Item(ItemBase):
 
     class Config:
         from_attributes=True
+
+
+class LogCreate(_pydantic.BaseModel):
+    object_id: int
+    log: str
+
+    class Config:
+        from_attributes=True

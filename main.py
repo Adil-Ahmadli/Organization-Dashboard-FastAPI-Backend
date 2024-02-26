@@ -112,3 +112,10 @@ async def update_item(item_id: int,
         await _services.update_item(item_id, item, current_member, db)
         return {'detail': 'Item updated successfully'}
 
+# log routes
+@app.get("/api/logs", response_model=list[_schemas.LogCreate])
+async def read_logs(skip: int = 0, limit: int = 10,
+                    member: _schemas.Member = _fastapi.Depends(_services.get_current_member),
+                    db: _orm.Session = _fastapi.Depends(_services.get_db)):
+        return await _services.get_logs(skip, limit, member, db)
+

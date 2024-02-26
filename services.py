@@ -66,6 +66,7 @@ async def create_item(member: _schemas.Member ,
     db_item = _models.Item(**item.dict(), owner_id=member.id)
     db.add(db_item)
     db.commit()
+    await create_log(member, _schemas.LogCreate(log="create item", object_id=db_item.id), db)
     db.refresh(db_item)
     return _schemas.Item.from_orm(db_item)
 
@@ -99,6 +100,7 @@ async def delete_item(item_id: int, member: _schemas.Member, db: _orm.Session):
     item = await _item_selector(item_id, member, db)
     db.delete(item)
     db.commit()
+    await create_log(member, _schemas.LogCreate(log="delete item", object_id=item.id), db)
 
 async def update_item(item_id: int, item: _schemas.ItemCreate, member: _schemas.Member, db: _orm.Session):
     if member.employee_role == "user":
@@ -111,6 +113,7 @@ async def update_item(item_id: int, item: _schemas.ItemCreate, member: _schemas.
 
     db.commit()
     db.refresh(db_item)
+    await create_log(member, _schemas.LogCreate(log="update item", object_id=db_item.id), db)
     return _schemas.Item.from_orm(db_item)
 
 
@@ -147,6 +150,7 @@ async def create_member(current_member: _schemas.Member, member: _schemas.Member
     db.add(new_member)
     db.commit()
     db.refresh(new_member)
+    await create_log(current_member, _schemas.LogCreate(log="create member", object_id=new_member.id), db)
     return _schemas.Member.from_orm(new_member)
 
 async def get_member(member_id: int, member: _schemas.Member, db: _orm.Session):
@@ -175,6 +179,7 @@ async def delete_member(member_id: int, member: _schemas.Member, db: _orm.Sessio
     
     db.delete(existingmember)
     db.commit()
+    await create_log(member, _schemas.LogCreate(log="delete member", object_id=existingmember.id), db)
 
 async def update_member(member_id: int, member: _schemas.MemberUpdate, current_member: _schemas.Member, db: _orm.Session):
     db_member = db.query(_models.Member).filter(_models.Member.id == member_id).first()
@@ -211,4 +216,18 @@ async def update_member(member_id: int, member: _schemas.MemberUpdate, current_m
 
     db.commit()
     db.refresh(db_member)
+    await create_log(current_member, _schemas.LogCreate(log="update member", object_id=db_member.id), db)
     return _schemas.Member.from_orm(db_member)
+
+async def get_logs(skip: int, limit: int, member: _schemas.Member, db: _orm.Session):
+    if member.employee_role == "user":
+        raise _fastapi.HTTPException(status_code=400, detail="Users cannot view logs")
+    logs = db.query(_models.Logs).offset(skip).limit(limit).all()
+    return list(map(_schemas.LogCreate.from_orm, logs))
+
+async def create_log(member: _schemas.Member, log: _schemas.LogCreate, db: _orm.Session):
+    db_log = _models.Logs(**log.dict(), subject_id=member.id, subject_email=member.email)
+    db.add(db_log)
+    db.commit()
+    db.refresh(db_log)
+    
