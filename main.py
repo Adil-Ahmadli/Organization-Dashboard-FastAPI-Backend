@@ -60,7 +60,13 @@ async def delete_member(member_id: int,
         await _services.delete_member(member_id, current_member, db)
         return {'detail': 'Member deleted successfully'}
 
-
+@app.put("/api/members/{member_id}", status_code=200)
+async def update_member(member_id: int,
+                        member: _schemas.MemberUpdate,
+                        db: _orm.Session = _fastapi.Depends(_services.get_db),
+                        current_member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
+        await _services.update_member(member_id, member, current_member, db)
+        return {'detail': 'Member updated successfully'}
 
 
 

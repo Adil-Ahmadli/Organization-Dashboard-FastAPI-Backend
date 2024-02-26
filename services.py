@@ -104,9 +104,11 @@ async def update_item(item_id: int, item: _schemas.ItemCreate, member: _schemas.
     if member.employee_role == "user":
         raise _fastapi.HTTPException(status_code=400, detail="Users cannot update items")
     db_item = await _item_selector(item_id, member, db)
+
     for key, value in item.dict().items():
         setattr(db_item, key, value)
     setattr(db_item, "date_last_updated", _dt.datetime.now().isoformat())
+
     db.commit()
     db.refresh(db_item)
     return _schemas.Item.from_orm(db_item)
@@ -137,12 +139,15 @@ async def create_member(current_member: _schemas.Member, member: _schemas.Member
     
     new_member = _models.Member(email=member.email, name=member.name, 
                                surname=member.surname, employee_role=member.employee_role, 
-                               hashed_password=_hash.bcrypt.hash(member.password))
+                               hashed_password=_hash.bcrypt.hash(member.password),
+                                date_created = _dt.datetime.now().isoformat(),
+                                date_last_updated = _dt.datetime.now().isoformat())
+
 
     db.add(new_member)
     db.commit()
     db.refresh(new_member)
-    return _schemas.Member.from_orm(db_member)
+    return _schemas.Member.from_orm(new_member)
 
 async def get_member(member_id: int, member: _schemas.Member, db: _orm.Session):
     existingmember = db.query(_models.Member).filter(_models.Member.id == member_id).first()
@@ -171,3 +176,39 @@ async def delete_member(member_id: int, member: _schemas.Member, db: _orm.Sessio
     db.delete(existingmember)
     db.commit()
 
+async def update_member(member_id: int, member: _schemas.MemberUpdate, current_member: _schemas.Member, db: _orm.Session):
+    db_member = db.query(_models.Member).filter(_models.Member.id == member_id).first()
+    if not db_member:
+        raise _fastapi.HTTPException(status_code=404, detail="Member not found")
+    
+    if current_member.employee_role == "admin":
+        if db_member.employee_role == "superadmin" or ( db_member.employee_role == "admin" and  not db_member.id == current_member.id):
+            raise _fastapi.HTTPException(status_code=400, detail="Admins cannot update superadmins and other admins")
+    elif current_member.employee_role == "user":
+        if not db_member.id == current_member.id:
+            raise _fastapi.HTTPException(status_code=400, detail="Basic users can only update themselves")
+
+    if not db_member.active == member.active:
+        if current_member.employee_role == "superadmin" and db_member.employee_role == "superadmin":
+            raise _fastapi.HTTPException(status_code=400, detail="Superadmins cannot suspend himself/herself")
+        if current_member.employee_role == "admin" and db_member.id == current_member.id:
+            raise _fastapi.HTTPException(status_code=400, detail="Admins cannot suspend themselves")
+        if current_member.employee_role == "user":
+            raise _fastapi.HTTPException(status_code=400, detail="Basic users cannot (un)suspend anyone")
+        
+        if member.active == False:
+            db_member.suspended_by_id = current_member.id
+        else:
+            if ( not db_member.suspended_by_id == current_member.id ) and (not current_member.employee_role == "superadmin"):
+                raise _fastapi.HTTPException(status_code=400, detail="Only the admin who suspended the member can unsuspend him/her")
+            elif db_member.suspended_by_id == current_member.id or current_member.employee_role == "superadmin":
+                db_member.suspended_by_id = None
+
+    db_member.date_last_updated = _dt.datetime.now().isoformat()
+    db_member.last_updated_by_id = current_member.id
+    for key, value in member.dict().items():
+        setattr(db_member, key, value)
+
+    db.commit()
+    db.refresh(db_member)
+    return _schemas.Member.from_orm(db_member)

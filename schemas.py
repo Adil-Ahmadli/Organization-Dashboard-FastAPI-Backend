@@ -29,6 +29,13 @@ class Member(MemberBase):
         from_attributes=True
 
 
+class MemberUpdate(_pydantic.BaseModel):
+    name: str
+    surname: str
+    active: bool
+
+    class Config:
+        from_attributes=True
 
 class ItemBase(_pydantic.BaseModel):
     name: str
