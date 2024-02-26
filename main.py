@@ -119,3 +119,16 @@ async def read_logs(skip: int = 0, limit: int = 10,
                     db: _orm.Session = _fastapi.Depends(_services.get_db)):
         return await _services.get_logs(skip, limit, member, db)
 
+# organization routes
+@app.post("/api/organization")
+async def create_organization(organization: _schemas.OrganizationCreate,
+                              db: _orm.Session = _fastapi.Depends(_services.get_db),
+                               member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
+    return await _services.create_organization(member, organization, db)
+
+
+@app.put("/api/organization", status_code=200)
+async def update_organization(organization: _schemas.OrganizationUpdate,
+                              db: _orm.Session = _fastapi.Depends(_services.get_db),
+                              member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
+    return await _services.update_organization(organization, db, member)

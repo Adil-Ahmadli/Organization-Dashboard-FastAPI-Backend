@@ -62,3 +62,22 @@ class LogCreate(_pydantic.BaseModel):
 
     class Config:
         from_attributes=True
+
+class Organization(_pydantic.BaseModel):
+    name: str
+    is_active: bool
+    
+    class Config:
+        from_attributes=True
+
+class OrganizationUpdate(_pydantic.BaseModel):
+    is_active: bool
+    
+    class Config:
+        from_attributes=True
+
+class OrganizationCreate(_pydantic.BaseModel):
+    name: str
+    
+    class Config:
+        from_attributes=True

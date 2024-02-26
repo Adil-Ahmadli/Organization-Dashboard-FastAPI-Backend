@@ -61,3 +61,13 @@ class Logs(Base):
 
     def __repr__(self):
         return f"<Log: {self.log} >"
+    
+class Organization(Base):
+    __tablename__ = "organizations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    def __repr__(self):
+        return f"<Organization: {self.name} >"

@@ -230,4 +230,24 @@ async def create_log(member: _schemas.Member, log: _schemas.LogCreate, db: _orm.
     db.add(db_log)
     db.commit()
     db.refresh(db_log)
-    
+
+async def create_organization(member: _schemas.Member, organization:_schemas.OrganizationCreate, db: _orm.Session):
+    if db.query(_models.Organization).first():
+        raise _fastapi.HTTPException(status_code=400, detail="Organization already exists")
+    if member.employee_role == "user" or member.employee_role == "admin":
+        raise _fastapi.HTTPException(status_code=400, detail="Only superadmins can create the organization")
+    org = _models.Organization(name = organization.name)
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    await create_log(member, _schemas.LogCreate(log="create org", object_id = org.id), db)
+
+async def update_organization(organization:_schemas.OrganizationUpdate, db: _orm.Session, member: _schemas.Member):
+    if member.employee_role == "user" or member.employee_role == "admin":
+        raise _fastapi.HTTPException(status_code=400, detail="Only superadmins can update the organization")
+    org = db.query(_models.Organization).first()
+    org.is_active = organization.is_active
+    db.commit()
+    db.refresh(org)
+    await create_log(member, _schemas.LogCreate(log="update org", object_id = org.id), db)
+    return _schemas.Organization.from_orm(org)
