@@ -39,7 +39,7 @@ async def register_member(member: _schemas.MemberCreate, db: _orm.Session):
 
 async def authenticate_user(email: str, password: str, db: _orm.Session):
     user = await get_user_by_email(email=email, db=db)
-    if not user or not user.verify_password(password):
+    if not user or not user.verify_password(password) or not user.active:
         return False
     return user
 
@@ -223,10 +223,14 @@ async def get_logs(skip: int, limit: int, member: _schemas.Member, db: _orm.Sess
     if member.employee_role == "user":
         raise _fastapi.HTTPException(status_code=400, detail="Users cannot view logs")
     logs = db.query(_models.Logs).offset(skip).limit(limit).all()
-    return list(map(_schemas.LogCreate.from_orm, logs))
+    print("-------------")
+    print(list(map(_schemas.Log.from_orm, logs)))
+    print("-------------")
+
+    return list(map(_schemas.Log.from_orm, logs))
 
 async def create_log(member: _schemas.Member, log: _schemas.LogCreate, db: _orm.Session):
-    db_log = _models.Logs(**log.dict(), subject_id=member.id, subject_email=member.email)
+    db_log = _models.Logs(log=log.log, object_id=log.object_id, subject_id=member.id, subject_email=member.email)
     db.add(db_log)
     db.commit()
     db.refresh(db_log)
@@ -249,5 +253,25 @@ async def update_organization(organization:_schemas.OrganizationUpdate, db: _orm
     org.is_active = organization.is_active
     db.commit()
     db.refresh(org)
+    members = await get_members(0, 100, member, db)
+    print("--------------------------")
+    print(members)
+    print("--------------------------")
+    for member in members:
+        if member.active == False and organization.is_active == True:
+            member.active = True
+            member.suspended_by_id = None
+            member.date_last_updated = _dt.datetime.now().isoformat()
+            member.last_updated_by_id = org.id
+            db.commit()
+            db.refresh(member)
+        if member.active == True and organization.is_active == False:
+            member.active = False
+            member.suspended_by_id = org.id
+            member.date_last_updated = _dt.datetime.now().isoformat()
+            member.last_updated_by_id = org.id
+            db.commit()
+            db.refresh(member)
+
     await create_log(member, _schemas.LogCreate(log="update org", object_id = org.id), db)
     return _schemas.Organization.from_orm(org)

@@ -1,11 +1,17 @@
 import fastapi as _fastapi
 import fastapi.security as _security
 import sqlalchemy.orm as _orm
+from fastapi.middleware.cors import CORSMiddleware
 
 import services as _services, models as _models, database as _database, schemas as _schemas
 
 app = _fastapi.FastAPI()
-
+app.add_middleware(CORSMiddleware, 
+                   allow_origins=["*"], 
+                   allow_credentials=True, 
+                   allow_methods=["*"], 
+                   allow_headers=["*"]
+                   )
 # general routes
 @app.post("/register")
 async def register(member: _schemas.MemberCreate, db: _orm.Session = _fastapi.Depends(_services.get_db)):
@@ -19,6 +25,15 @@ async def register(member: _schemas.MemberCreate, db: _orm.Session = _fastapi.De
 
     member = await _services.register_member(member, db)
     return await _services.create_token(member)
+
+@app.post("/api/login")
+async def login(member: _schemas.MemberLogin,
+		 db: _orm.Session = _fastapi.Depends(_services.get_db)):
+    user = await _services.authenticate_user(member.email, member.password, db)
+    if not user:
+        raise _fastapi.HTTPException(status_code=401, detail="Invalid email or password")
+    
+    return await _services.create_token(user)
 
 @app.post("/api/token")
 async def generate_token(form_data: _security.OAuth2PasswordRequestForm = _fastapi.Depends(),
@@ -100,8 +115,7 @@ async def delete_item(item_id: int,
                     current_member: _schemas.Member = _fastapi.Depends(_services.get_current_member)
                     ):
         await _services.delete_item(item_id, current_member, db)
-        return {'detail': 'Item deleted successfully'}
-
+        return {"detail": "Item deleted successfully"}
 
 @app.put("/api/items/{item_id}", status_code=200)
 async def update_item(item_id: int,
@@ -113,7 +127,7 @@ async def update_item(item_id: int,
         return {'detail': 'Item updated successfully'}
 
 # log routes
-@app.get("/api/logs", response_model=list[_schemas.LogCreate])
+@app.get("/api/logs", response_model=list[_schemas.Log])
 async def read_logs(skip: int = 0, limit: int = 10,
                     member: _schemas.Member = _fastapi.Depends(_services.get_current_member),
                     db: _orm.Session = _fastapi.Depends(_services.get_db)):

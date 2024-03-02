@@ -16,6 +16,13 @@ class MemberCreate(MemberBase):
 
     class Config:
         from_attributes=True
+        
+class MemberLogin(_pydantic.BaseModel):
+    email: str
+    password: str
+
+    class Config:
+        from_attributes=True
 
 class Member(MemberBase):
     id: int
@@ -60,6 +67,14 @@ class LogCreate(_pydantic.BaseModel):
     object_id: int
     log: str
 
+    class Config:
+        from_attributes=True
+
+class Log(LogCreate):
+    id: int
+    date_created: str
+    subject_id: int
+    subject_email: str
     class Config:
         from_attributes=True
 
