@@ -51,7 +51,7 @@ async def get_me(current_member: _schemas.Member = _fastapi.Depends(_services.ge
     return current_member
 
 @app.get("/api/members", response_model=list[_schemas.Member])
-async def read_members(skip: int = 0, limit: int = 10,
+async def read_members(skip: int = 0, limit: int = 100,
                        current_member: _schemas.Member = _fastapi.Depends(_services.get_current_member),
                        db: _orm.Session = _fastapi.Depends(_services.get_db)):
     return await _services.get_members(skip, limit, current_member, db)
@@ -89,7 +89,7 @@ async def update_member(member_id: int,
 
 # item routes
 @app.get("/api/items", response_model=list[_schemas.Item])
-async def read_items(skip: int = 0, limit: int = 10,
+async def read_items(skip: int = 0, limit: int = 100,
                      member: _schemas.Member = _fastapi.Depends(_services.get_current_member),
                      db: _orm.Session = _fastapi.Depends(_services.get_db)):
         return await _services.get_items(skip, limit, member, db)
@@ -128,21 +128,26 @@ async def update_item(item_id: int,
 
 # log routes
 @app.get("/api/logs", response_model=list[_schemas.Log])
-async def read_logs(skip: int = 0, limit: int = 10,
+async def read_logs(skip: int = 0, limit: int = 100,
                     member: _schemas.Member = _fastapi.Depends(_services.get_current_member),
                     db: _orm.Session = _fastapi.Depends(_services.get_db)):
         return await _services.get_logs(skip, limit, member, db)
 
 # organization routes
-@app.post("/api/organization")
+@app.post("/api/organizations")
 async def create_organization(organization: _schemas.OrganizationCreate,
                               db: _orm.Session = _fastapi.Depends(_services.get_db),
                                member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
     return await _services.create_organization(member, organization, db)
 
 
-@app.put("/api/organization", status_code=200)
+@app.put("/api/organizations", status_code=200)
 async def update_organization(organization: _schemas.OrganizationUpdate,
                               db: _orm.Session = _fastapi.Depends(_services.get_db),
                               member: _schemas.Member = _fastapi.Depends(_services.get_current_member)):
     return await _services.update_organization(organization, db, member)
+
+@app.get("/api/organizations", response_model=list[_schemas.Organization])
+async def read_organizations( member: _schemas.Member = _fastapi.Depends(_services.get_current_member),
+                             db: _orm.Session = _fastapi.Depends(_services.get_db)):
+    return await _services.get_organizations(member, db)

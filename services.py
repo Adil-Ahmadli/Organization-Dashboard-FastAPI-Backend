@@ -253,25 +253,30 @@ async def update_organization(organization:_schemas.OrganizationUpdate, db: _orm
     org.is_active = organization.is_active
     db.commit()
     db.refresh(org)
-    members = await get_members(0, 100, member, db)
-    print("--------------------------")
-    print(members)
+    members = db.query(_models.Member).filter(_models.Member.employee_role != "superadmin").offset(0).limit(100).all()
     print("--------------------------")
     for member in members:
+        print(member.active, org.is_active)
         if member.active == False and organization.is_active == True:
             member.active = True
             member.suspended_by_id = None
             member.date_last_updated = _dt.datetime.now().isoformat()
             member.last_updated_by_id = org.id
-            db.commit()
-            db.refresh(member)
         if member.active == True and organization.is_active == False:
             member.active = False
             member.suspended_by_id = org.id
             member.date_last_updated = _dt.datetime.now().isoformat()
             member.last_updated_by_id = org.id
-            db.commit()
-            db.refresh(member)
+        db.commit()
+        db.refresh(member)
+
+
 
     await create_log(member, _schemas.LogCreate(log="update org", object_id = org.id), db)
     return _schemas.Organization.from_orm(org)
+
+async def get_organizations(member: _schemas.Member, db: _orm.Session):
+    if member.employee_role != "superadmin":
+        raise _fastapi.HTTPException(status_code=400, detail="Only superadmin can view organizations")
+    org = db.query(_models.Organization).all()
+    return  list(map(_schemas.Organization.from_orm, org))

@@ -79,6 +79,7 @@ class Log(LogCreate):
         from_attributes=True
 
 class Organization(_pydantic.BaseModel):
+    id: int
     name: str
     is_active: bool
     
